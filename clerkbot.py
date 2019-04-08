@@ -15,6 +15,7 @@ with open('settings.json') as f:
 wiki = mwclient.Site(settings['site'], path=settings['path'], clients_useragent=settings['ua'])
 wiki.login(settings['user'], settings['password'])
 logging.info("Logged in to " + settings['site'] + " as user " + settings['user'])
+
 while True:
     acnxpost.run(wiki)
     time.sleep(60)

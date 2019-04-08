@@ -41,13 +41,12 @@ def run(wiki):
                     a = "\n: Discuss this at: '''[[" + TACN + "#" + title + "]]'''{{subst:hes}}\n\n"
                     announcement = section.contents.strip() + a
                     section.contents = announcement
-                    #pagetext = pagetext.replace(section.contents, announcement, 1)
 
                     logging.info('Creating talk section ' + TACN + '#' + title)
                     talkpage = wiki.pages[TACN]
                     a = "\n== " + title + " ==\n: [[" + ACN + "#" + title + "|'''Original announcement''']]{{subst:hes}}\n"
                     if talkpage.text().find("== " + title + " ==") == -1:
-                        talkpage.save(talkpage.text() + a, '/* ' + title + ' */ Creating talk page section ([[User:Arbitration Bot|bot]])', minor=True, bot=True)
+                        talkpage.save(talkpage.text() + a, '/* ' + title + ' */ Creating talk page section (bot)', minor=True, bot=True)
                     else:
                         logging.warning('Section already exists.')
 
@@ -57,7 +56,7 @@ def run(wiki):
                         logging.info('Crossposting to ' + target + '#' + title)
                         p = wiki.pages[target]
                         if p.text().find("== " + title + " ==") == -1:
-                            p.save(p.text() + xpost_content, '/* ' + title + ' */ Crossposting from [[WP:ACN]] ([[User:Arbitration Bot|bot]])', minor=False, bot=False)
+                            p.save(p.text() + xpost_content, '/* ' + title + ' */ Crossposting from [[WP:ACN]] (bot)', minor=False, bot=False)
                         else:
                             logging.warning('Section already exists.')
 
@@ -66,7 +65,6 @@ def run(wiki):
                 while t.find('\n\n\n') > -1:
                     t = t.replace('\n\n\n', '\n\n')
                 logging.info('Updating ' + ACN)
-                page.save(t, summary='Adding links to talk page ([[User:Arbitration Bot|bot]])', minor=True, bot=True)
+                page.save(t, summary='Adding links to talk page (bot)', minor=True, bot=True)
     except Exception as e:
         logging.error("Exception occurred", exc_info=True)
-        #print(type(e) + ": " + str(e))
