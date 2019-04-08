@@ -27,15 +27,16 @@ def run(wiki):
     """
 
     try:
+        authusers = []
         def auth():
             lasteditor = wiki.revisions([page.revision])[0]['user']
             authpage = wiki.pages[AUTH]
             authusers = [user.page_title for user in authpage.links(namespace=2)]
             return lasteditor in authusers
-            
+        
         page = wiki.pages[ACN]
-        pagetext = page.text()
-        parsed = parser.parse(pagetext)
+        parsed = parser.parse(page.text())
+        updated = False
         for section in parsed.sections:
             if section.level == 2 and section.contents.strip().endswith("(UTC)") and section.contents.find(TACN) == -1:
                 if auth():
@@ -62,14 +63,15 @@ def run(wiki):
                             p.save(p.text() + xpost_content, '/* ' + title + ' */ Crossposting from [[WP:ACN]] (bot)', minor=False, bot=False)
                         else:
                             logging.warning('Section already exists.')
+                    updated = True
                 else:
                     break
 
-        if parsed != page.text():
+        if updated and parsed != page.text():
             t = str(parsed)
             while t.find('\n\n\n') > -1:
                 t = t.replace('\n\n\n', '\n\n')
             logging.info('Updating ' + ACN)
-            page.save(t, summary='Adding links to talk page (bot)', minor=True, bot=True)
+            page.save(t, summary='Adding links to talk page sections (bot)', minor=True, bot=True)
     except Exception as e:
         logging.error("Exception occurred", exc_info=True)
