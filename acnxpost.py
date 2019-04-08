@@ -7,7 +7,7 @@ def run(wiki):
     ACN = u"Wikipedia:Arbitration Committee/Noticeboard"
     TACN = u"Wikipedia talk:Arbitration Committee/Noticeboard"
     AN = u"Wikipedia:Administrators' noticeboard"
-    AUTH = u"User:Arbitration Bot/Authorized users"
+    AUTH = u"User:ArbClerkBot/Authorized users"
 
     """
     load WP:ACN
@@ -27,15 +27,18 @@ def run(wiki):
     """
 
     try:
+        def auth():
+            lasteditor = wiki.revisions([page.revision])[0]['user']
+            authpage = wiki.pages[AUTH]
+            authusers = [user.page_title for user in authpage.links(namespace=2)]
+            return lasteditor in authusers
+            
         page = wiki.pages[ACN]
         pagetext = page.text()
-        lastuser = wiki.revisions([page.revision])[0]['user']
-        authpage = wiki.pages[AUTH]
-        authusers = [user.page_title for user in authpage.links(namespace=2)]
-        if lastuser in authusers:
-            parsed = parser.parse(pagetext)
-            for section in parsed.sections:
-                if section.level == 2 and section.contents.strip().endswith("(UTC)") and section.contents.find(TACN) == -1:
+        parsed = parser.parse(pagetext)
+        for section in parsed.sections:
+            if section.level == 2 and section.contents.strip().endswith("(UTC)") and section.contents.find(TACN) == -1:
+                if auth():
                     title = section.title.strip()
                     logging.info('Found new section ' + ACN + '#' + title)
                     a = "\n: Discuss this at: '''[[" + TACN + "#" + title + "]]'''{{subst:hes}}\n\n"
@@ -59,12 +62,14 @@ def run(wiki):
                             p.save(p.text() + xpost_content, '/* ' + title + ' */ Crossposting from [[WP:ACN]] (bot)', minor=False, bot=False)
                         else:
                             logging.warning('Section already exists.')
+                else:
+                    break
 
-            if parsed != page.text():
-                t = str(parsed)
-                while t.find('\n\n\n') > -1:
-                    t = t.replace('\n\n\n', '\n\n')
-                logging.info('Updating ' + ACN)
-                page.save(t, summary='Adding links to talk page (bot)', minor=True, bot=True)
+        if parsed != page.text():
+            t = str(parsed)
+            while t.find('\n\n\n') > -1:
+                t = t.replace('\n\n\n', '\n\n')
+            logging.info('Updating ' + ACN)
+            page.save(t, summary='Adding links to talk page (bot)', minor=True, bot=True)
     except Exception as e:
         logging.error("Exception occurred", exc_info=True)
