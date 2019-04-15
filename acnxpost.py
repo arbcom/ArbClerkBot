@@ -1,6 +1,6 @@
 import mwclient
 import json
-import wikitextparser as parser
+import mwparserfromhell as parser
 import logging
 import re
 
@@ -40,12 +40,14 @@ def run(wiki):
             authusers.extend([user.page_title for user in authpage.links(namespace=2)])
             return lasteditor in authusers
 
-        def xpost(target, title, announcement, ignoreerrors=False):
+        def xpost(target, announcement, ignoreerrors=False):
             try:
-                logging.info('Crossposting to ' + target + '#' + title)
-                p = wiki.pages[target]
-                if p.text().find("== " + title + " ==") == -1:
-                    p.save(p.text() + '\n== ' + title + ' ==\n' + announcement, '/* ' + title + ' */ Crossposting from [[' + ACN + ']] (bot)', minor=False, bot=False)
+                title = parser.parse(announcement).filter_headings()[0].title.strip()
+                titletext = parser.parse(title).strip_code()
+                logging.info('Crossposting to ' + target)
+                p = wiki.pages[target].resolve_redirect()
+                if p.text().find("\n== " + title + " ==") == -1:
+                    p.save(p.text() + "\n" + announcement, '/* ' + titletext + ' */ Crossposting from [[' + ACN + ']] (bot)', minor=False, bot=False)
                 else:
                     logging.warning('Section already exists.')
             except Exception as e:
@@ -60,31 +62,33 @@ def run(wiki):
             logging.info('Current revision: ' + str(__lastrev))
             parsed = parser.parse(page.text())
             updated = False
-            for section in parsed.sections:
-                if section.level == 2 and section.contents.strip().endswith("(UTC)") and section.contents.find(TACN) == -1:
+            #for section in parsed.sections:
+            for section in parsed.get_sections(levels=[2]):
+                if section.strip().endswith("(UTC)") and section.find(TACN) == -1:
                     if auth():
-                        title = section.title.strip()
-                        logging.info('Found new section ' + ACN + '#' + title)
-                        a = "\n: Discuss this at: '''[[" + TACN + "#" + title + "]]'''{{subst:hes}}\n\n"
-                        announcement = section.contents.strip() + a
-                        section.contents = announcement
+                        title = section.filter_headings()[0].title.strip()
+                        titletext = parser.parse(title).strip_code()
+                        logging.info('Found new section ' + ACN + '#' + titletext)
+                        discuss = "\n: Discuss this at: '''[[" + TACN + "#" + titletext + "]]'''{{subst:hes}}\n\n"
+                        announcement = str(section) + discuss
+                        section.append(discuss)
 
-                        logging.info('Creating talk section ' + TACN + '#' + title)
+                        logging.info('Creating talk section ' + TACN + '#' + titletext)
                         talkpage = wiki.pages[TACN]
-                        a = "\n== " + title + " ==\n: [[" + ACN + "#" + title + "|'''Original announcement''']]{{subst:hes}}\n"
+                        talksection = "\n== " + title + " ==\n: [[" + ACN + "#" + titletext + "|'''Original announcement''']]{{subst:hes}}\n"
                         if talkpage.text().find("== " + title + " ==") == -1:
-                            talkpage.save(talkpage.text() + a, '/* ' + title + ' */ Creating talk page section (bot)', minor=True, bot=True)
+                            talkpage.save(talkpage.text() + talksection, '/* ' + title + ' */ Creating talk page section (bot)', minor=True, bot=True)
                         else:
                             logging.warning('Section already exists.')
 
-                        xpost(AN, title, announcement)
+                        xpost(AN, announcement)
 
                         xpostusers = []
                         for ul in [user.page_title for user in page.links(namespace=2)]:
                             if re.search('[:|]' + ul + '[]|}]', announcement) and ul not in authusers:
                                 xpostusers.append("User talk:" + ul)
                         for user in xpostusers:
-                            xpost(user, title, announcement, True)
+                            xpost(user, announcement, True)
 
                         updated = True
                     else:
