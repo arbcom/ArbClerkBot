@@ -62,7 +62,6 @@ def run(wiki):
             logging.info('Current revision: ' + str(__lastrev))
             parsed = parser.parse(page.text())
             updated = False
-            #for section in parsed.sections:
             for section in parsed.get_sections(levels=[2]):
                 if section.strip().endswith("(UTC)") and section.find(TACN) == -1:
                     if auth():
@@ -77,7 +76,7 @@ def run(wiki):
                         talkpage = wiki.pages[TACN]
                         talksection = "\n== " + title + " ==\n: [[" + ACN + "#" + titletext + "|'''Original announcement''']]{{subst:hes}}\n"
                         if talkpage.text().find("== " + title + " ==") == -1:
-                            talkpage.save(talkpage.text() + talksection, '/* ' + title + ' */ Creating talk page section (bot)', minor=True, bot=True)
+                            talkpage.save(talkpage.text() + talksection, '/* ' + title + ' */ Creating talk page section (bot)', minor=False, bot=False)
                         else:
                             logging.warning('Section already exists.')
 
@@ -99,6 +98,6 @@ def run(wiki):
                 while t.find('\n\n\n') > -1:
                     t = t.replace('\n\n\n', '\n\n')
                 logging.info('Updating ' + ACN)
-                page.save(t, summary='Adding links to talk page sections (bot)', minor=True, bot=True)
+                page.save(t, summary='Adding links to talk page sections (bot)', minor=False, bot=False)
     except Exception as e:
         logging.error("Exception occurred", exc_info=True)
