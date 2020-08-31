@@ -68,7 +68,8 @@ def run(wiki):
                         title = section.filter_headings()[0].title.strip()
                         titletext = parser.parse(title).strip_code()
                         logging.info('Found new section ' + ACN + '#' + titletext)
-                        discuss = "\n: Discuss this at: '''[[" + TACN + "#" + titletext + "]]'''{{subst:hes}}\n\n"
+                        #discuss = "\n: Discuss this at: '''[[" + TACN + "#" + titletext + "]]'''{{subst:hes}}\n\n"
+                        discuss = "\n: Discuss this at: '''{{slink|" + TACN + "|" + titletext + "}}'''{{subst:hes}}\n\n"
                         announcement = str(section) + discuss
                         section.append(discuss)
 
