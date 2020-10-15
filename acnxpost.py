@@ -62,6 +62,7 @@ def run(wiki):
             logging.info('Current revision: ' + str(__lastrev))
             parsed = parser.parse(page.text())
             updated = False
+            changed_section = None
             for section in parsed.get_sections(levels=[2]):
                 if section.strip().endswith("(UTC)") and section.find(TACN) == -1:
                     if auth():
@@ -72,6 +73,10 @@ def run(wiki):
                         discuss = "\n: Discuss this at: '''{{slink|" + TACN + "|" + titletext + "}}'''{{subst:hes}}\n\n"
                         announcement = str(section) + discuss
                         section.append(discuss)
+                        if changed_section is None:
+                            changed_section = titletext
+                        else:
+                            changed_section = ""
 
                         logging.info('Creating talk section ' + TACN + '#' + titletext)
                         talkpage = wiki.pages[TACN]
@@ -99,6 +104,10 @@ def run(wiki):
                 while t.find('\n\n\n') > -1:
                     t = t.replace('\n\n\n', '\n\n')
                 logging.info('Updating ' + ACN)
-                page.save(t, summary='Adding links to talk page sections (bot)', minor=False, bot=False)
+                if changed_section:
+                    changed_section = '/* ' + changed_section + ' */ '
+                else:
+                    changed_section = ""
+                page.save(t, summary=changed_section + 'Adding links to talk page sections (bot)', minor=False, bot=False)
     except Exception as e:
         logging.error("Exception occurred", exc_info=True)
